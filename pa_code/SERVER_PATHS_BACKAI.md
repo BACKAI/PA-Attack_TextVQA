@@ -82,6 +82,20 @@ sudo ln -s /var/tmp/jnuadmin_vlm/VLM/dataset/MSCOCO/val2014 /home/datasets/coco2
 # coco_path = "/var/tmp/jnuadmin_vlm/VLM/dataset/MSCOCO/val2014"
 ```
 
+권한 문제나 원본 파일 수정을 피하려면 `pa_code`의 서버용 generator를 사용한다.
+
+```bash
+cd /var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA
+conda activate pa
+
+export PYTHON_BIN=python
+export COCO_VAL_IMAGE_DIR=/var/tmp/jnuadmin_vlm/VLM/dataset/MSCOCO/val2014
+export MODEL_PATH=/var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA/models/llava-v1.5-7b
+export PROTOTYPE_PATH=prototypes_llava_tokens_bestpca/prototypes_tokens_3000_20_1024.pt
+
+CUDA_VISIBLE_DEVICES=0 bash pa_code/generate_llava_prototype_server.sh
+```
+
 ## PA-Attack 실행
 GPU 0~3이 비어 있으므로 기본값으로 사용한다. 기존 VQAttack 프로세스는 GPU 4~7을 쓰고 있으므로 충돌하지 않는다.
 

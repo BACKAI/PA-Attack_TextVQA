@@ -75,6 +75,16 @@ CUDA_VISIBLE_DEVICES=0 bash bash/llava_prototype_generation.sh
 
 주의: `prototype/prototype_pca.py`에는 COCO 경로 `/home/datasets/coco2014/val2014`가 하드코딩되어 있다. 서버 경로가 다르면 파일을 수정하거나 symlink를 만들어야 한다.
 
+권한 문제나 원본 파일 수정을 피하려면 `pa_code`의 서버용 generator를 사용한다.
+
+```bash
+export COCO_VAL_IMAGE_DIR=/var/tmp/jnuadmin_vlm/VLM/dataset/MSCOCO/val2014
+export MODEL_PATH=/var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA/models/llava-v1.5-7b
+export PROTOTYPE_PATH=prototypes_llava_tokens_bestpca/prototypes_tokens_3000_20_1024.pt
+
+CUDA_VISIBLE_DEVICES=0 bash pa_code/generate_llava_prototype_server.sh
+```
+
 ## 실행
 BACKAI 서버의 현재 경로 기준 명령은 `pa_code/SERVER_PATHS_BACKAI.md`에 따로 정리했다.
 

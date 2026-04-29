@@ -15,6 +15,8 @@
   - shard 수량, prototype 존재, Python import 상태를 점검한다.
 - `pa_code/setup_pa_conda_env.sh`
   - 기존 VQAttack 환경과 분리된 `pa` conda 환경을 만들고 TextVQA/LLaVA PA-Attack 최소 의존성을 설치한다.
+- `pa_code/generate_llava_prototype_server.py`, `pa_code/generate_llava_prototype_server.sh`
+  - 원본 `prototype/prototype_pca.py`의 `/home/datasets/coco2014/val2014` 하드코딩을 피하고 서버 MSCOCO 경로로 LLaVA prototype을 생성한다.
 - `pa_code/README_server.md`
   - 서버 실행 방법과 출력 구조를 정리했다.
 - `pa_code/prepare_textvqa10.py`
@@ -43,6 +45,7 @@
 - 서버용 Python 스크립트 문법 검사 성공.
 - 서버용 bash 스크립트 문법 검사 성공.
 - PA 전용 conda 환경 생성 스크립트 bash 문법 검사 성공.
+- PA 전용 prototype 생성 shell 스크립트 bash 문법 검사 성공.
 
 ## 로컬에서 막힌 것
 - 실제 `python -m vlm_eval.run_evaluation_paattack ...` 진입점은 로컬 conda 환경 의존성 부족으로 중단됨.
