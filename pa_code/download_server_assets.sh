@@ -9,17 +9,71 @@ HF_MODEL_ID="${HF_MODEL_ID:-liuhaotian/llava-v1.5-7b}"
 MODEL_DIR="${MODEL_DIR:-models/llava-v1.5-7b}"
 PROTOTYPE_PATH="${PROTOTYPE_PATH:-prototypes_llava_tokens_bestpca/prototypes_tokens_3000_20_1024.pt}"
 PROTOTYPE_URL="${PROTOTYPE_URL:-}"
+INSTALL_HF_CLI="${INSTALL_HF_CLI:-1}"
 
 mkdir -p "$(dirname "$MODEL_DIR")" "$(dirname "$PROTOTYPE_PATH")"
 
-echo "Installing Hugging Face CLI if needed..."
-"$PYTHON_BIN" -m pip install -U "huggingface_hub[cli]"
+ensure_hf_hub_compatible() {
+  if [[ "$INSTALL_HF_CLI" != "1" ]]; then
+    return 0
+  fi
+
+  if "$PYTHON_BIN" - <<'PY'
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    value = version("huggingface-hub")
+except PackageNotFoundError:
+    raise SystemExit(1)
+
+major = int(value.split(".", 1)[0])
+raise SystemExit(0 if major < 1 else 1)
+PY
+  then
+    return 0
+  fi
+
+  echo "Installing a transformers-compatible Hugging Face Hub package..."
+  "$PYTHON_BIN" -m pip install "huggingface_hub>=0.36.2,<1.0"
+}
+
+ensure_hf_cli() {
+  if command -v hf >/dev/null 2>&1 || command -v huggingface-cli >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ "$INSTALL_HF_CLI" != "1" ]]; then
+    echo "Neither hf nor huggingface-cli is available, and INSTALL_HF_CLI=$INSTALL_HF_CLI." >&2
+    exit 1
+  fi
+
+  echo "Installing a transformers-compatible Hugging Face CLI..."
+  "$PYTHON_BIN" -m pip install "huggingface_hub>=0.36.2,<1.0"
+}
+
+download_hf_repo() {
+  local repo_id="$1"
+  local local_dir="$2"
+
+  ensure_hf_cli
+
+  if command -v hf >/dev/null 2>&1; then
+    hf download "$repo_id" --local-dir "$local_dir"
+  elif command -v huggingface-cli >/dev/null 2>&1; then
+    huggingface-cli download "$repo_id" \
+      --local-dir "$local_dir" \
+      --local-dir-use-symlinks False
+  else
+    echo "Hugging Face CLI is still unavailable after installation." >&2
+    exit 1
+  fi
+}
+
+ensure_hf_hub_compatible
 
 if [[ "${DOWNLOAD_LLAVA:-1}" == "1" ]]; then
   echo "Downloading LLaVA model from Hugging Face: $HF_MODEL_ID"
-  huggingface-cli download "$HF_MODEL_ID" \
-    --local-dir "$MODEL_DIR" \
-    --local-dir-use-symlinks False
+  download_hf_repo "$HF_MODEL_ID" "$MODEL_DIR"
   echo "LLaVA model path: $MODEL_DIR"
 fi
 

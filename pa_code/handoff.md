@@ -13,6 +13,8 @@
   - `--skip-existing`으로 재시작 가능하다.
 - `pa_code/preflight_textvqa_server.py`
   - shard 수량, prototype 존재, Python import 상태를 점검한다.
+- `pa_code/setup_pa_conda_env.sh`
+  - 기존 VQAttack 환경과 분리된 `pa` conda 환경을 만들고 TextVQA/LLaVA PA-Attack 최소 의존성을 설치한다.
 - `pa_code/README_server.md`
   - 서버 실행 방법과 출력 구조를 정리했다.
 - `pa_code/prepare_textvqa10.py`
@@ -40,6 +42,7 @@
   - 4개 shard 합산이 full split 수량과 일치.
 - 서버용 Python 스크립트 문법 검사 성공.
 - 서버용 bash 스크립트 문법 검사 성공.
+- PA 전용 conda 환경 생성 스크립트 bash 문법 검사 성공.
 
 ## 로컬에서 막힌 것
 - 실제 `python -m vlm_eval.run_evaluation_paattack ...` 진입점은 로컬 conda 환경 의존성 부족으로 중단됨.
@@ -56,12 +59,21 @@
   - `open_clip` 없음.
 
 ## 서버 실행 전제
-- PA-Attack 원본 requirements 또는 호환 환경 설치.
+- 권장: `pa_code/setup_pa_conda_env.sh`로 PA-Attack 전용 `pa` conda 환경 생성.
 - `open-clip-torch`, `einops`, `einops-exts`, `torch`, `torchvision`, LLaVA 호환 `transformers` 버전 필요.
 - LLaVA-1.5-7B는 PA-Attack 코드 기준 `liuhaotian/llava-v1.5-7b` 사용.
 - 다음 prototype 파일 필요:
-  - `prototypes_llava_tokens_bestpca_cls/prototypes_tokens_3000_20_1024.pt`
+  - `prototypes_llava_tokens_bestpca/prototypes_tokens_3000_20_1024.pt`
 - 서버의 TextVQA 경로를 `TEXTVQA_ROOT`로 지정해야 한다.
+
+## 서버 다운로드 이슈 대응
+- `download_server_assets.sh`가 `huggingface_hub`를 1.x로 올리면 `transformers 4.26.1`과 충돌한다.
+- 스크립트는 실행 시 `huggingface_hub>=0.36.2,<1.0` 범위를 확인하고, 사용 가능한 경우 `hf download`를 먼저 쓰도록 수정했다.
+- 서버에서 이미 1.x로 올라간 경우:
+```bash
+python -m pip install "huggingface_hub>=0.36.2,<1.0"
+```
+- `PROTOTYPE_URL="https://your-private-url/..."`은 placeholder이므로 실제 URL이 없으면 다운로드가 아니라 prototype 생성 절차를 사용해야 한다.
 
 ## 서버 실행 예시
 ```bash

@@ -24,8 +24,32 @@
 - Python 환경 핵심 패키지:
   - `torch`, `torchvision`, `open-clip-torch`, `einops`, `einops-exts`, `transformers` LLaVA 호환 버전
 
+## PA 전용 conda 환경
+기존 `vqattack-textvqa` 환경은 다른 공격 코드에 맞춰져 있으므로 PA-Attack은 별도 환경을 권장한다.
+
+```bash
+cd /var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA
+
+export CONDA_ENV_NAME=pa
+export PYTHON_VERSION=3.10
+bash pa_code/setup_pa_conda_env.sh
+
+conda activate pa
+export PYTHON_BIN=python
+```
+
+기본 스크립트는 TextVQA/LLaVA PA-Attack 실행에 필요한 최소 패키지를 설치한다. 원본 `requirements.txt` 전체 설치가 꼭 필요하면 `INSTALL_FULL_REQUIREMENTS=1`을 지정할 수 있지만, 현재 TextVQA 실행에는 권장하지 않는다.
+
 ## 모델/prototype 다운로드
 LLaVA 모델은 Hugging Face에서 받을 수 있다.
+
+이미 `huggingface_hub 1.x`가 설치되어 `transformers 4.26.1`과 충돌한 경우에는 먼저 호환 버전으로 되돌린다.
+
+```bash
+python -m pip install "huggingface_hub>=0.36.2,<1.0"
+```
+
+수정된 `download_server_assets.sh`도 실행 시 이 호환 범위를 확인하고 필요하면 자동으로 되돌린다.
 
 ```bash
 export HF_MODEL_ID=liuhaotian/llava-v1.5-7b
@@ -41,6 +65,8 @@ export PROTOTYPE_PATH=prototypes_llava_tokens_bestpca/prototypes_tokens_3000_20_
 bash pa_code/download_server_assets.sh
 ```
 
+`https://your-private-url/...`은 실제 URL이 아니라 예시다. 실제 prototype URL이 없으면 아래처럼 서버에서 생성해야 한다.
+
 prototype URL이 없으면 서버에서 원본 방식으로 생성한다.
 
 ```bash
@@ -50,6 +76,8 @@ CUDA_VISIBLE_DEVICES=0 bash bash/llava_prototype_generation.sh
 주의: `prototype/prototype_pca.py`에는 COCO 경로 `/home/datasets/coco2014/val2014`가 하드코딩되어 있다. 서버 경로가 다르면 파일을 수정하거나 symlink를 만들어야 한다.
 
 ## 실행
+BACKAI 서버의 현재 경로 기준 명령은 `pa_code/SERVER_PATHS_BACKAI.md`에 따로 정리했다.
+
 ```bash
 cd PA-Attack
 
