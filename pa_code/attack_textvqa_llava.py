@@ -1,9 +1,14 @@
 import argparse
 import json
 import os
+import sys
 import time
 from collections import OrderedDict
 from pathlib import Path
+
+PA_ROOT = Path(__file__).resolve().parents[1]
+if str(PA_ROOT) not in sys.path:
+    sys.path.insert(0, str(PA_ROOT))
 
 import numpy as np
 import open_clip
@@ -40,7 +45,13 @@ class ClipVisionModel(torch.nn.Module):
             return feature
         self.model.output_tokens = True
         if attention:
-            feature, token_features, attentions = self.model(self.normalize(vision), output_attentions=True)
+            try:
+                feature, token_features, attentions = self.model(self.normalize(vision), output_attentions=True)
+            except TypeError as exc:
+                if "output_attentions" not in str(exc):
+                    raise
+                feature, token_features = self.model(self.normalize(vision))
+                attentions = None
             if output_normalize:
                 feature = F.normalize(feature, dim=-1)
                 token_features = F.normalize(token_features, dim=-1)
@@ -134,8 +145,24 @@ def generate_answer(model, tokenizer, image_processor, model_config, adv_image, 
 
 
 def build_tokens_mask(attentions, attention_layer, mask_scale):
+    if attentions is None:
+        raise ValueError("attentions is required for attention mask")
     cls2patch = attentions[attention_layer][:, :, 0, 1:].mean(dim=1)
     return F.softmax(mask_scale * cls2patch, dim=-1)
+
+
+def build_fallback_tokens_mask(tokens, mask_scale):
+    token_scores = tokens.detach().norm(dim=-1)
+    token_scores = (token_scores - token_scores.mean(dim=-1, keepdim=True)) / (
+        token_scores.std(dim=-1, keepdim=True) + 1e-6
+    )
+    return F.softmax((mask_scale / 20.0) * token_scores, dim=-1)
+
+
+def build_auto_tokens_mask(tokens, attentions, args):
+    if attentions is not None:
+        return build_tokens_mask(attentions, args.attention_layer, args.mask_scale)
+    return build_fallback_tokens_mask(tokens, args.mask_scale)
 
 
 def attack_image(clean_image, clip_model_vision, proto_tokens, args):
@@ -148,7 +175,7 @@ def attack_image(clean_image, clip_model_vision, proto_tokens, args):
             tokens=True,
             attention=True,
         )
-        tokens_mask = build_tokens_mask(attentions, args.attention_layer, args.mask_scale)
+        tokens_mask = build_auto_tokens_mask(tokens_orig, attentions, args)
 
     tokens_norm = F.normalize(tokens_orig, dim=-1)
     proto_tokens_norm = F.normalize(proto_tokens, dim=-1)
@@ -174,13 +201,13 @@ def attack_image(clean_image, clip_model_vision, proto_tokens, args):
     )
 
     with torch.no_grad():
-        _, _, attentions = clip_model_vision(
+        _, tokens_adv, attentions = clip_model_vision(
             vision=adv_image,
             output_normalize=output_normalize,
             tokens=True,
             attention=True,
         )
-        tokens_mask = build_tokens_mask(attentions, args.attention_layer, args.mask_scale)
+        tokens_mask = build_auto_tokens_mask(tokens_adv, attentions, args)
 
     loss_wrapper = ComputeLossWrapper(embedding_orig, tokens_orig, target_proto_tokens, tokens_mask, "none")
     perturbation = torch.zeros_like(adv_image).uniform_(-args.eps_float, args.eps_float).requires_grad_(True)

@@ -88,6 +88,19 @@ CUDA_VISIBLE_DEVICES=0 bash pa_code/generate_llava_prototype_server.sh
 ## 실행
 BACKAI 서버의 현재 경로 기준 명령은 `pa_code/SERVER_PATHS_BACKAI.md`에 따로 정리했다.
 
+장시간 실행은 tmux wrapper를 권장한다.
+
+```bash
+export SESSION_NAME=pa_textvqa_attack
+export CONDA_ENV_NAME=pa
+export GPUS="0 1 2 3"
+export OUTPUT_ROOT=/var/tmp/jnuadmin_vlm/VLM/outputs/textvqa_paattack_llava_4gpu
+export RUN_ID=server_run_001
+
+bash pa_code/start_textvqa_paattack_tmux.sh
+tmux attach -t pa_textvqa_attack
+```
+
 ```bash
 cd PA-Attack
 

@@ -99,6 +99,31 @@ CUDA_VISIBLE_DEVICES=0 bash pa_code/generate_llava_prototype_server.sh
 ## PA-Attack 실행
 GPU 0~3이 비어 있으므로 기본값으로 사용한다. 기존 VQAttack 프로세스는 GPU 4~7을 쓰고 있으므로 충돌하지 않는다.
 
+tmux에서 실행하려면 아래 wrapper를 권장한다. 환경변수와 conda activation을 tmux 세션 안에서 자동으로 설정한다.
+
+```bash
+cd /var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA
+
+export SESSION_NAME=pa_textvqa_attack
+export CONDA_ENV_NAME=pa
+export GPUS="0 1 2 3"
+export OUTPUT_ROOT=/var/tmp/jnuadmin_vlm/VLM/outputs/textvqa_paattack_llava_4gpu
+export RUN_ID=server_run_001
+
+bash pa_code/start_textvqa_paattack_tmux.sh
+tmux attach -t pa_textvqa_attack
+```
+
+기존 세션이 남아 있으면 먼저 접속하거나 종료한다.
+
+```bash
+tmux attach -t pa_textvqa_attack
+# 또는
+tmux kill-session -t pa_textvqa_attack
+```
+
+수동 실행은 아래와 같다.
+
 ```bash
 cd /var/tmp/jnuadmin_vlm/VLM/Attack/PA-Attack_TextVQA
 

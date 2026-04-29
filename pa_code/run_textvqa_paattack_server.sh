@@ -7,6 +7,7 @@ cd "$PA_ROOT"
 export PYTHONDONTWRITEBYTECODE=1
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-max_split_size_mb:256}"
+export PYTHONPATH="$PA_ROOT:${PYTHONPATH:-}"
 
 TEXTVQA_ROOT="${TEXTVQA_ROOT:?Set TEXTVQA_ROOT to the server TextVQA root directory}"
 MODEL_PATH="${MODEL_PATH:-liuhaotian/llava-v1.5-7b}"
@@ -92,9 +93,20 @@ for split in $SPLITS; do
     run_shard "$split" "$shard_index" "$gpu"
     pids+=("$!")
   done
+  failed=0
   for pid in "${pids[@]}"; do
-    wait "$pid"
+    if ! wait "$pid"; then
+      failed=1
+    fi
   done
+  if [[ "$failed" != "0" ]]; then
+    echo "One or more $split shards failed. Recent shard logs:" >&2
+    for log_file in "$OUTPUT_ROOT"/logs/"${split}"_shard_*.log; do
+      echo "===== $log_file =====" >&2
+      tail -n 80 "$log_file" >&2 || true
+    done
+    exit 1
+  fi
   echo "Finished split=$split"
 done
 

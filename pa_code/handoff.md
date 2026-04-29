@@ -8,9 +8,14 @@
 - `pa_code/attack_textvqa_llava.py`
   - LLaVA-1.5-7B와 PA-Attack prototype loss로 TextVQA shard를 공격한다.
   - 이미지별 adversarial tensor를 저장하고, question별 답변 로그를 `answers.jsonl`에 쓴다.
+  - 직접 실행해도 repo root를 `sys.path`에 추가해 `llava`/`vlm_eval` import가 잡히도록 했다.
 - `pa_code/run_textvqa_paattack_server.sh`
   - GPU 0~3을 기본 사용해 train shard 4개 실행 후 validation shard 4개를 실행한다.
   - `--skip-existing`으로 재시작 가능하다.
+  - shard subprocess가 `llava`를 import할 수 있도록 `PYTHONPATH`에 repo root를 추가한다.
+  - shard 실패 시 각 shard log tail을 즉시 출력하도록 보강했다.
+- `pa_code/start_textvqa_paattack_tmux.sh`
+  - tmux 세션 안에서 conda activation, `PYTHONPATH`, GPU/env 설정, 본 실행을 한 번에 수행한다.
 - `pa_code/preflight_textvqa_server.py`
   - shard 수량, prototype 존재, Python import 상태를 점검한다.
 - `pa_code/setup_pa_conda_env.sh`
@@ -46,6 +51,11 @@
 - 서버용 bash 스크립트 문법 검사 성공.
 - PA 전용 conda 환경 생성 스크립트 bash 문법 검사 성공.
 - PA 전용 prototype 생성 shell 스크립트 bash 문법 검사 성공.
+- shard 실행 시 `ModuleNotFoundError: No module named 'llava'`가 발생해 `PYTHONPATH`/`sys.path` 보강 패치를 추가했다.
+- 서버 수동 실행에서 tmux/env 세팅이 반복적으로 꼬여 tmux wrapper를 추가했다.
+- 서버 실행 중 `VisionTransformer.forward() got an unexpected keyword argument 'output_attentions'`가 발생했다.
+  - 현재 `open-clip-torch`의 ViT가 attention 반환을 지원하지 않아 생긴 문제다.
+  - `attack_textvqa_llava.py`는 attention이 없으면 token norm 기반 mask로 fallback하도록 수정했다.
 
 ## 로컬에서 막힌 것
 - 실제 `python -m vlm_eval.run_evaluation_paattack ...` 진입점은 로컬 conda 환경 의존성 부족으로 중단됨.
