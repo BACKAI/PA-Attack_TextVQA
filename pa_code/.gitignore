@@ -1,0 +1,8 @@
+generated/
+outputs/
+logs/
+__pycache__/
+*.pt
+*.pth
+*.png
+*.jpg
